@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -8,48 +9,53 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ID Card Generator',
+      title: 'IUT ID Card',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
-      home: const InputPage(),
+      home: const CreateIDPage(),
     );
   }
 }
 
-class InputPage extends StatefulWidget {
-  const InputPage({super.key});
+class CreateIDPage extends StatefulWidget {
+  const CreateIDPage({super.key});
+
   @override
-  State<InputPage> createState() => _InputPageState();
+  State<CreateIDPage> createState() => _CreateIDPageState();
 }
 
-class _InputPageState extends State<InputPage> {
+class _CreateIDPageState extends State<CreateIDPage> {
   final nameController = TextEditingController();
   final idController = TextEditingController();
   File? profileImage;
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() => profileImage = File(pickedFile.path));
+      setState(() {
+        profileImage = File(pickedFile.path);
+      });
     }
   }
 
   void goToCard() {
-    final id = idController.text;
-    if (nameController.text.isEmpty ||
-        id.length != 9 ||
-        int.tryParse(id) == null ||
-        !['1', '2', '4', '5', '6'].contains(id[4]) ||
-        profileImage == null) {
+    if (nameController.text.isEmpty || idController.text.isEmpty || profileImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Enter valid details:\n- Name required\n- Student ID must be 9 digits, numbers only\n- 5th digit must be one of 1,2,4,5,6\n- Profile photo required')),
+        const SnackBar(content: Text('Please fill all fields and select an image')),
+      );
+      return;
+    }
+    if (idController.text.length != 9) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Student ID must be 9 digits')),
       );
       return;
     }
@@ -58,7 +64,7 @@ class _InputPageState extends State<InputPage> {
       MaterialPageRoute(
         builder: (context) => IDCardPage(
           name: nameController.text,
-          studentId: id,
+          studentId: idController.text,
           image: profileImage!,
         ),
       ),
@@ -90,6 +96,7 @@ class _InputPageState extends State<InputPage> {
           if (profileImage != null) ...[
             const SizedBox(height: 10),
             Image.file(profileImage!, height: 90),
+            const SizedBox(height: 8)
           ],
           const SizedBox(height: 14),
           ElevatedButton(
@@ -102,126 +109,349 @@ class _InputPageState extends State<InputPage> {
   }
 }
 
-class IDCardPage extends StatelessWidget {
+class IDCardPage extends StatefulWidget {
   final String name;
   final String studentId;
   final File image;
 
-  const IDCardPage(
-      {super.key, required this.name, required this.studentId, required this.image});
+  const IDCardPage({
+    super.key,
+    required this.name,
+    required this.studentId,
+    required this.image,
+  });
+
+  @override
+  State<IDCardPage> createState() => _IDCardPageState();
+}
+
+class _IDCardPageState extends State<IDCardPage> {
+  int currentFontIndex = 0;
+
+  // List of 7 different fonts
+  final List<Map<String, dynamic>> fonts = [
+    {'name': 'Roboto', 'style': GoogleFonts.roboto()},
+    {'name': 'Poppins', 'style': GoogleFonts.poppins()},
+    {'name': 'Montserrat', 'style': GoogleFonts.montserrat()},
+    {'name': 'Open Sans', 'style': GoogleFonts.openSans()},
+    {'name': 'Lato', 'style': GoogleFonts.lato()},
+    {'name': 'Raleway', 'style': GoogleFonts.raleway()},
+    {'name': 'Ubuntu', 'style': GoogleFonts.ubuntu()},
+  ];
+
+  void changeFont() {
+    setState(() {
+      currentFontIndex = (currentFontIndex + 1) % fonts.length;
+    });
+  }
 
   Map<String, dynamic> getDeptInfo(String id) {
     final code = id[4];
     switch (code) {
       case '4':
-        return {'dept': 'CSE', 'color': Colors.blue, 'program': 'B.Sc. in CSE'};
+        return {'dept': 'CSE', 'program': 'B.Sc. in CSE', 'color': Colors.blueAccent};
       case '2':
-        return {'dept': 'EEE', 'color': Colors.yellow, 'program': 'B.Sc. in EEE'};
+        return {'dept': 'EEE', 'program': 'B.Sc. in EEE', 'color': Colors.yellow};
       case '1':
-        return {'dept': 'MPE', 'color': Colors.red, 'program': 'B.Sc. in MPE'};
+        return {'dept': 'MPE', 'program': 'B.Sc. in MPE', 'color': Colors.redAccent};
       case '5':
-        return {'dept': 'CEE', 'color': Colors.green, 'program': 'B.Sc. in CEE'};
+        return {'dept': 'CEE', 'program': 'B.Sc. in CEE', 'color': Colors.greenAccent};
       case '6':
-        return {'dept': 'BTM', 'color': Colors.purple, 'program': 'B.Sc. in BTM'};
+        return {'dept': 'BTM', 'program': 'B.Sc. in BTM', 'color': Colors.purpleAccent};
       default:
-        return {'dept': 'Unknown', 'color': Colors.grey, 'program': 'Unknown'};
+        return {'dept': 'Unknown', 'program': 'Unknown', 'color': Colors.grey};
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final info = getDeptInfo(studentId);
+    final info = getDeptInfo(widget.studentId);
+    const darkGreen = Color(0xFF06402B);
+    final dynamicColorDeptwise = info['color'] as Color;
+    final currentFont = fonts[currentFontIndex]['style'] as TextStyle;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ID Card')),
+      backgroundColor: dynamicColorDeptwise,
+      appBar: AppBar(
+        title: const Text('ID Card'),
+        backgroundColor: darkGreen,
+        foregroundColor: Colors.white,
+      ),
       body: Center(
         child: Container(
-          width: 340,
-          padding: const EdgeInsets.all(16),
+          width: 380,
+          margin: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: const [
-              BoxShadow(color: Colors.black12, blurRadius: 8, spreadRadius: 3),
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 15,
+                spreadRadius: 5,
+              ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Image.asset('assets/images/iut_logo.png', height: 52),
-              const SizedBox(height: 8),
-              const Text('ISLAMIC UNIVERSITY OF TECHNOLOGY',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Container(
-                width: 120,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: info['color'],
-                  borderRadius: BorderRadius.circular(10),
-                ),
+              // Main card container
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Green header section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(top: 12, bottom: 70),
+                    decoration: const BoxDecoration(
+                      color: darkGreen,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Logo placeholder
+                        Container(
+                          height: 70,
+                          width: 70,
+                          decoration: const BoxDecoration(
+                            color: darkGreen,
+                          ),
+                          child: Image.asset('assets/images/iut_logo.png', fit: BoxFit.contain),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'ISLAMIC UNIVERSITY OF TECHNOLOGY',
+                          textAlign: TextAlign.center,
+                          style: currentFont.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // White content section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(20, 85, 20, 0),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                    ),
+                    child: Column(
+                      children: [
+                        // Student ID Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.vpn_key, size: 18, color: Colors.black87),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Student ID',
+                              style: currentFont.copyWith(
+                                fontSize: 16,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: dynamicColorDeptwise,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                widget.studentId,
+                                style: currentFont.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Student Name
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.person, size: 18, color: Colors.black87),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Student Name',
+                              style: currentFont.copyWith(
+                                fontSize: 14,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          widget.name.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: currentFont.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Program
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.school, size: 18, color: Colors.black87),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Program ',
+                              style: currentFont.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              info['program'],
+                              style: currentFont.copyWith(fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Department
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.apartment, size: 18, color: Colors.black87),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Department ',
+                              style: currentFont.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              info['dept'],
+                              style: currentFont.copyWith(fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Location
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.location_on, size: 18, color: Colors.black87),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Bangladesh',
+                              style: currentFont.copyWith(fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+
+                  // Green footer section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: const BoxDecoration(
+                      color: darkGreen,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Text(
+                      'A subsidiary organ of OIC',
+                      textAlign: TextAlign.center,
+                      style: currentFont.copyWith(
+                        fontSize: 13,
+                        color: Colors.white70,
+                        fontStyle: FontStyle.italic,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Profile image positioned using Stack
+              Positioned(
+                top: 120,
+                left: 0,
+                right: 0,
                 child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(image, width: 90, height: 100, fit: BoxFit.cover),
+                  child: Container(
+                    width: 120,
+                    height: 145,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: darkGreen, width: 5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: Image.file(
+                        widget.image,
+                        width: 140,
+                        height: 145,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Icon(Icons.vpn_key, size: 18),
-                  const SizedBox(width: 6),
-                  const Text('Student ID', style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(studentId, style: const TextStyle(color: Colors.white, fontSize: 18)),
-              ),
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 18),
-                  const SizedBox(width: 6),
-                  const Text('Student Name', style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.school, size: 18),
-                  const SizedBox(width: 6),
-                  const Text('Program ', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(info['program']),
-                ],
-              ),
-              Row(
-                children: [
-                  const Icon(Icons.apartment, size: 18),
-                  const SizedBox(width: 6),
-                  const Text('Department ', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(info['dept']),
-                ],
-              ),
-              Row(
-                children: const [
-                  Icon(Icons.location_on, size: 18),
-                  SizedBox(width: 6),
-                  Text('Bangladesh'),
-                ],
-              ),
-              const SizedBox(height: 6),
-              const Text('A subsidiary organ of OIC', style: TextStyle(fontSize: 11)),
             ],
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: changeFont,
+        backgroundColor: darkGreen,
+        icon: const Icon(Icons.font_download, color: Colors.white),
+        label: Text(
+          fonts[currentFontIndex]['name'],
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
