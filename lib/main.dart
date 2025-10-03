@@ -127,6 +127,7 @@ class IDCardPage extends StatefulWidget {
 
 class _IDCardPageState extends State<IDCardPage> {
   int currentFontIndex = 0;
+  int currentColorIndex = 0;
 
   // List of 7 different fonts
   final List<Map<String, dynamic>> fonts = [
@@ -139,9 +140,26 @@ class _IDCardPageState extends State<IDCardPage> {
     {'name': 'Ubuntu', 'style': GoogleFonts.ubuntu()},
   ];
 
+  // List of 7 light shaded colors
+  final List<Map<String, dynamic>> cardColors = [
+    {'name': 'White', 'color': Colors.white},
+    {'name': 'Beige', 'color': Color(0xFFF5F5DC)},
+    {'name': 'Pearl', 'color': Color(0xFFFAF9F6)},
+    {'name': 'Ivory', 'color': Color(0xFFFFFFF0)},
+    {'name': 'Cream', 'color': Color(0xFFFFFDD0)},
+    {'name': 'Eggshell', 'color': Color(0xFFF0EAD6)},
+    {'name': 'Vanilla', 'color': Color(0xFFF3E5AB)},
+  ];
+
   void changeFont() {
     setState(() {
       currentFontIndex = (currentFontIndex + 1) % fonts.length;
+    });
+  }
+
+  void changeCardColor() {
+    setState(() {
+      currentColorIndex = (currentColorIndex + 1) % cardColors.length;
     });
   }
 
@@ -169,6 +187,7 @@ class _IDCardPageState extends State<IDCardPage> {
     const darkGreen = Color(0xFF06402B);
     final dynamicColorDeptwise = info['color'] as Color;
     final currentFont = fonts[currentFontIndex]['style'] as TextStyle;
+    final currentCardColor = cardColors[currentColorIndex]['color'] as Color;
 
     return Scaffold(
       backgroundColor: dynamicColorDeptwise,
@@ -239,8 +258,8 @@ class _IDCardPageState extends State<IDCardPage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(20, 85, 20, 0),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: currentCardColor,
                     ),
                     child: Column(
                       children: [
@@ -442,14 +461,32 @@ class _IDCardPageState extends State<IDCardPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: changeFont,
-        backgroundColor: darkGreen,
-        icon: const Icon(Icons.font_download, color: Colors.white),
-        label: Text(
-          fonts[currentFontIndex]['name'],
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            onPressed: changeCardColor,
+            backgroundColor: darkGreen,
+            heroTag: 'colorButton',
+            icon: const Icon(Icons.palette, color: Colors.white),
+            label: Text(
+              cardColors[currentColorIndex]['name'],
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            onPressed: changeFont,
+            backgroundColor: darkGreen,
+            heroTag: 'fontButton',
+            icon: const Icon(Icons.font_download, color: Colors.white),
+            label: Text(
+              fonts[currentFontIndex]['name'],
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
